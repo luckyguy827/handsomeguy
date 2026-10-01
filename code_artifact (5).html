@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ko" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindLens - 상대방 심리 & 속마음 분석기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                            bg: '#f8fafc',
+                            card: '#ffffff'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Pretendard', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Modern Bright Glass Card Styles & Soft Shadows */
+        .bright-card {
+            background: #ffffff;
+            box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        
+        .gauge-fill {
+            transition: stroke-dashoffset 1.5s ease-in-out, stroke 0.5s ease;
+        }
+        
+        .progress-bar-fill {
+            transition: width 1s ease-out;
+        }
+
+        /* Page Transitions */
+        .page-step {
+            display: none;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        
+        .page-step.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        .mic-active {
+            animation: pulse-red 1.2s infinite ease-in-out;
+            color: #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <div class="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8 min-h-screen flex flex-col justify-between">
+        
+        <!-- Bright App Header -->
+        <header class="flex justify-between items-center mb-6 border-b border-slate-200/80 pb-4 bg-white/70 backdrop-blur-md sticky top-0 z-40 pt-2 px-3 rounded-2xl">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl shadow-md shadow-indigo-500/20 text-white">
+                    <i data-lucide="brain-circuit" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                        MindLens
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-semibold border border-indigo-100">AI속마음분석기</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">상대방의 말·행동 뒤에 숨겨진 진짜 의도 & 완벽 대처법</p>
+                </div>
+            </div>
+            
+            <!-- Step Indicators -->
+            <div class="hidden sm:flex items-center space-x-2 text-xs font-medium">
+                <span id="nav-step-1" class="px-3 py-1.5 rounded-full bg-indigo-600 text-white font-semibold shadow-sm transition-all">1. 입력</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span id="nav-step-2" class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 transition-all">2. 감정/화 수치</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span id="nav-step-3" class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 transition-all">3. 진짜 속마음</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span id="nav-step-4" class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 transition-all">4. 대처 스크립트</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area containing 4 Pages -->
+        <main class="flex-grow">
+            
+            <!-- PAGE 1: Input Page -->
+            <section id="page-1" class="page-step active space-y-6">
+                <div class="bright-card p-6 sm:p-8 rounded-2xl">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="message-square" class="text-indigo-600 w-5 h-5"></i>
+                            상대방의 언어 & 행동 정보 입력
+                        </h2>
+                        <p class="text-slate-500 text-sm mt-1">상대방이 한 말과 분위기/말투를 적어주시면 심리학적으로 숨은 의도를 분석합니다.</p>
+                    </div>
+
+                    <form id="analysisForm" class="space-y-6" onsubmit="event.preventDefault(); startAnalysis();">
+                        <!-- 1. 관계 선택 -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">1. 상대방과의 관계</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                                <button type="button" onclick="selectRelationship(this, '연인/배우자')" class="rel-btn p-3 rounded-xl border border-indigo-600 bg-indigo-50/80 text-indigo-700 font-semibold ring-2 ring-indigo-500/20 text-sm transition text-center active-rel">
+                                    ❤️ 연인/배우자
+                                </button>
+                                <button type="button" onclick="selectRelationship(this, '직장 상사/동료')" class="rel-btn p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 text-sm font-medium transition text-center">
+                                    💼 직장 상사/동료
+                                </button>
+                                <button type="button" onclick="selectRelationship(this, '친구')" class="rel-btn p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 text-sm font-medium transition text-center">
+                                    🤝 친구
+                                </button>
+                                <button type="button" onclick="selectRelationship(this, '가족')" class="rel-btn p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 text-sm font-medium transition text-center">
+                                    🏡 가족
+                                </button>
+                                <button type="button" onclick="selectRelationship(this, '고객/클라이언트')" class="rel-btn p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 text-sm font-medium transition text-center">
+                                    🤝 고객/클라이언트
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. 상대방이 한 말 (+ 마이크 버튼) -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="inputText" class="block text-sm font-semibold text-slate-700">2. 상대방이 한 말 (직접 입력 또는 음성 입력)</label>
+                                <button type="button" onclick="toggleMic('inputText', 'micBtn1')" id="micBtn1" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center gap-1.5 transition">
+                                    <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                                    <span>음성 입력</span>
+                                </button>
+                            </div>
+                            <textarea id="inputText" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-sm shadow-inner" placeholder="예: 업혀있으면서 '나 살쪘어?', 혹은 '됐어 신경 쓰지 마', '너 마음대로 해' 등"></textarea>
+                        </div>
+
+                        <!-- 3. 비언어적 표현/말투/분위기 직접 입력 칸 (Single Custom Field as requested) -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="nonVerbalInput" class="block text-sm font-semibold text-slate-700">3. 비언어적 표현 / 말투 / 표정 / 분위기 (자유 직접 입력)</label>
+                                <button type="button" onclick="toggleMic('nonVerbalInput', 'micBtn2')" id="micBtn2" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center gap-1.5 transition">
+                                    <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                                    <span>음성 입력</span>
+                                </button>
+                            </div>
+                            <input type="text" id="nonVerbalInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-sm shadow-inner" placeholder="예: 차가움, 한숨 쉼, 장난스럽게 웃음, 눈을 피함, 답장이 늦음, 삐진 표정 등">
+                        </div>
+
+                        <!-- 4. 정황 및 상황 (선택사항) -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="contextText" class="block text-sm font-semibold text-slate-700">4. 당시 정황 및 상황 (선택사항)</label>
+                                <button type="button" onclick="toggleMic('contextText', 'micBtn3')" id="micBtn3" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center gap-1.5 transition">
+                                    <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+                                    <span>음성 입력</span>
+                                </button>
+                            </div>
+                            <input type="text" id="contextText" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition text-sm shadow-inner" placeholder="예: 등에 업어주고 있을 때, 데이트 중 맛집 웨이팅 할 때, 업무 피드백할 때 등">
+                        </div>
+
+                        <!-- 제출 버튼 -->
+                        <button type="submit" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition transform active:scale-[0.99]">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                            상대방 심리 & 속마음 정밀 분석하기
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- PAGE 2: Emotion & Anger Score Page -->
+            <section id="page-2" class="page-step space-y-6">
+                <div class="bright-card p-6 sm:p-8 rounded-2xl">
+                    
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 02. Emotion & Tension Gauge</span>
+                            <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">감정 상태 & 화/긴장 지수 분석</h2>
+                        </div>
+                        <span id="relationBadge" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">연인/배우자</span>
+                    </div>
+
+                    <!-- Gauge visual -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-slate-50 p-6 rounded-2xl border border-slate-200/80">
+                        
+                        <!-- Dial Gauge Chart -->
+                        <div class="flex flex-col items-center justify-center relative">
+                            <svg class="w-48 h-48 transform -rotate-90" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="50" class="text-slate-200" stroke-width="12" stroke="currentColor" fill="transparent" />
+                                <circle id="gaugeCircle" cx="60" cy="60" r="50" class="gauge-fill text-rose-500" stroke-width="12" 
+                                        stroke-dasharray="314.15" stroke-dashoffset="314.15" stroke-linecap="round" stroke="currentColor" fill="transparent" />
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span id="angerScoreText" class="text-4xl font-extrabold text-slate-900">0%</span>
+                                <span id="angerLevelLabel" class="text-xs font-bold px-2.5 py-0.5 rounded-full mt-1 bg-rose-100 text-rose-700">감정 고조 수치</span>
+                            </div>
+                        </div>
+
+                        <!-- Anger Level Assessment Box -->
+                        <div class="space-y-4">
+                            <div>
+                                <span class="text-xs font-semibold text-slate-400 block mb-1">상대방 심리 상태 진단</span>
+                                <h3 id="emotionSummaryTitle" class="text-xl font-bold text-slate-900">"관심 유도 및 애정 확인 요구"</h3>
+                            </div>
+                            <p id="emotionSummaryDesc" class="text-sm text-slate-600 leading-relaxed bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                현재 상대방은 분노나 공격성보다는 애정 및 긍정적 확답을 요구하고 있는 상태입니다.
+                            </p>
+                            <div class="flex items-center gap-2 text-xs text-slate-600 bg-amber-50/80 p-2.5 rounded-lg border border-amber-200">
+                                <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600"></i>
+                                <span>위험도/경계도: <strong id="riskLevelText" class="text-amber-600 font-bold">보통 (말 한마디로 분위기 좌우)</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emotional Breakdown Progress Bars -->
+                    <div class="mt-8 space-y-4">
+                        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-600"></i>
+                            감정 구성 세부 비율
+                        </h4>
+                        
+                        <div id="emotionBreakdownList" class="space-y-3">
+                            <!-- Dynamic Content Inserted by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Navigation Action -->
+                    <div class="pt-6 flex justify-end">
+                        <button onclick="goToPage(3)" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl flex items-center gap-2 transition shadow-md shadow-indigo-600/20">
+                            다음: 진짜 속마음(속뜻) 확인
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PAGE 3: Hidden Intention Page -->
+            <section id="page-3" class="page-step space-y-6">
+                <div class="bright-card p-6 sm:p-8 rounded-2xl">
+                    
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 03. Hidden Intent & Unspoken Truth</span>
+                            <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">상대방의 진짜 속마음 & Intent</h2>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Grid: Spoken vs Inner Meaning -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Spoken Surface -->
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-3 opacity-10">
+                                <i data-lucide="message-square" class="w-20 h-20 text-slate-600"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">겉으로 한 말 (표면적 멘트)</span>
+                            <p id="surfaceSpeechText" class="text-base text-slate-800 font-semibold italic">"나 살쪘어?"</p>
+                            <div class="mt-4 pt-3 border-t border-slate-200 text-xs text-slate-500">
+                                📌 문맥적 착각: 실제로 무게 변화나 사실 여부를 묻는 질문이 아님!
+                            </div>
+                        </div>
+
+                        <!-- Real Inner Needs -->
+                        <div class="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 p-5 rounded-2xl border border-indigo-200 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-3 opacity-10">
+                                <i data-lucide="heart-handshake" class="w-20 h-20 text-indigo-600"></i>
+                            </div>
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-2">💡 진짜 속마음 (속뜻)</span>
+                            <p id="realInnerNeedText" class="text-base text-indigo-900 font-bold">"가볍다고, 전혀 안 살쪘고 여전히 너무 예쁘고 사랑스럽다고 달콤하게 말해줘!"</p>
+                            <div class="mt-4 pt-3 border-t border-indigo-200 text-xs text-indigo-700">
+                                🔍 핵심 니즈: 사실 확인 ❌ / 애정 확인 및 다정한 우쭈쭈 ⭕
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What They Want Right Now -->
+                    <div class="bg-indigo-50/60 border border-indigo-100 p-5 rounded-2xl my-5">
+                        <h4 class="text-sm font-bold text-indigo-900 flex items-center gap-2 mb-2">
+                            <i data-lucide="check-circle2" class="w-4 h-4 text-indigo-600"></i>
+                            상대방이 지금 정작 원하는 대답의 핵심 원칙
+                        </h4>
+                        <ul id="keyNeedsList" class="space-y-2 text-sm text-slate-700 list-disc list-inside">
+                            <!-- Dynamic Content -->
+                        </ul>
+                    </div>
+
+                    <!-- Critical Warning & Taboo Actions -->
+                    <div class="bg-rose-50 border border-rose-200 p-5 rounded-2xl space-y-3">
+                        <h4 class="text-sm font-bold text-rose-700 flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600"></i>
+                            🚨 절대 해서는 안 되는 오답 & 역효과 대답
+                        </h4>
+                        <div id="forbiddenBox" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-rose-900">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+
+                    <!-- Page Navigation -->
+                    <div class="pt-6 flex justify-between">
+                        <button onclick="goToPage(2)" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl flex items-center gap-2 transition">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            이전
+                        </button>
+                        <button onclick="goToPage(4)" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl flex items-center gap-2 transition shadow-md shadow-indigo-600/20">
+                            다음: 추천 대처 스크립트
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PAGE 4: Action Strategy & Script Page -->
+            <section id="page-4" class="page-step space-y-6">
+                <div class="bright-card p-6 sm:p-8 rounded-2xl space-y-6">
+                    
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 04. Perfect Response Recipes</span>
+                            <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">상황별 맞춤형 대처법 & 대화 모범답안</h2>
+                        </div>
+                    </div>
+
+                    <!-- Action Steps (Step-by-Step) -->
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <i data-lucide="list-checks" class="w-4 h-4 text-indigo-600"></i>
+                            즉시 취해야 할 행동 가이드라인
+                        </h3>
+                        <div id="actionStepsList" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+
+                    <!-- Response Timing Recommendation -->
+                    <div class="bg-amber-50/80 p-4 rounded-xl border border-amber-200/80 flex items-center justify-between flex-wrap gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 bg-amber-100 text-amber-700 rounded-xl">
+                                <i data-lucide="clock" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-medium text-amber-700 block">권장 대답 타이밍</span>
+                                <span id="timingText" class="text-sm font-bold text-slate-900">0.5초 만에 즉시 망설임 없이 답변!</span>
+                            </div>
+                        </div>
+                        <span class="text-xs font-medium text-amber-800 bg-white px-3 py-1.5 rounded-lg border border-amber-200 shadow-sm">고민하는 모습을 보이면 안 됨</span>
+                    </div>
+
+                    <!-- Script Templates (3 Scenarios) -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="copy" class="w-4 h-4 text-indigo-600"></i>
+                            상황별 추천 모범 답안 (클릭시 복사)
+                        </h3>
+
+                        <!-- Scenario 1 -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 relative group hover:border-indigo-300 transition shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded bg-indigo-100 text-indigo-700">타입 A: 센스있는 애정 표현형</span>
+                                <button onclick="copyToClipboard('scriptA', this)" class="text-xs text-slate-600 hover:text-indigo-600 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm transition">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span>복사</span>
+                                </button>
+                            </div>
+                            <p id="scriptA" class="text-xs sm:text-sm text-slate-800 bg-white p-3 rounded-lg leading-relaxed font-mono border border-slate-200/60"></p>
+                        </div>
+
+                        <!-- Scenario 2 -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 relative group hover:border-purple-300 transition shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded bg-purple-100 text-purple-700">타입 B: 공감 & 우쭈쭈 달래기형</span>
+                                <button onclick="copyToClipboard('scriptB', this)" class="text-xs text-slate-600 hover:text-purple-600 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm transition">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span>복사</span>
+                                </button>
+                            </div>
+                            <p id="scriptB" class="text-xs sm:text-sm text-slate-800 bg-white p-3 rounded-lg leading-relaxed font-mono border border-slate-200/60"></p>
+                        </div>
+
+                        <!-- Scenario 3 -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 relative group hover:border-emerald-300 transition shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800">타입 C: 위트있는 분위기 전환형</span>
+                                <button onclick="copyToClipboard('scriptC', this)" class="text-xs text-slate-600 hover:text-emerald-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm transition">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span>복사</span>
+                                </button>
+                            </div>
+                            <p id="scriptC" class="text-xs sm:text-sm text-slate-800 bg-white p-3 rounded-lg leading-relaxed font-mono border border-slate-200/60"></p>
+                        </div>
+                    </div>
+
+                    <!-- Reset & Re-analyze -->
+                    <div class="pt-6 border-t border-slate-100 flex justify-between items-center">
+                        <button onclick="goToPage(1)" class="w-full sm:w-auto px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            다른 상황 다시 분석하기
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Bright Footer -->
+        <footer class="mt-8 text-center text-xs text-slate-400 border-t border-slate-200/80 pt-4">
+            <p>© 2026 MindLens AI. 상대방의 말 뒤에 숨겨진 진의 파악 가이드입니다.</p>
+        </footer>
+    </div>
+
+    <!-- Notification Toast Message -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2 z-50">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toastMsg">클립보드에 복사되었습니다!</span>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+        });
+
+        // App State
+        const state = {
+            currentPage: 1,
+            relationship: '연인/배우자',
+            inputText: '',
+            nonVerbalInput: '',
+            contextText: '',
+            analysisResult: null
+        };
+
+        // Web Speech Recognition Logic
+        let activeRecognition = null;
+        let activeTargetId = null;
+
+        function toggleMic(targetId, btnId) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                showToast("이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 추천)");
+                return;
+            }
+
+            const btn = document.getElementById(btnId);
+            const inputField = document.getElementById(targetId);
+
+            if (activeRecognition && activeTargetId === targetId) {
+                // Stop current recording
+                activeRecognition.stop();
+                return;
+            }
+
+            if (activeRecognition) {
+                activeRecognition.stop();
+            }
+
+            try {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'ko-KR';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = function() {
+                    activeRecognition = recognition;
+                    activeTargetId = targetId;
+                    btn.classList.add('mic-active');
+                    showToast("음성을 듣고 있습니다... 말씀해 주세요.");
+                };
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    if (inputField) {
+                        if (inputField.value.trim() !== '') {
+                            inputField.value += ' ' + transcript;
+                        } else {
+                            inputField.value = transcript;
+                        }
+                    }
+                    showToast("음성이 텍스트로 전환되었습니다!");
+                };
+
+                recognition.onerror = function(event) {
+                    showToast("음성 인식 오류: " + event.error);
+                };
+
+                recognition.onend = function() {
+                    btn.classList.remove('mic-active');
+                    activeRecognition = null;
+                    activeTargetId = null;
+                };
+
+                recognition.start();
+            } catch (err) {
+                showToast("마이크 연결 오류가 발생했습니다.");
+            }
+        }
+
+        // Relationship Selection
+        function selectRelationship(btn, relName) {
+            document.querySelectorAll('.rel-btn').forEach(b => {
+                b.className = 'rel-btn p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 text-sm font-medium transition text-center';
+            });
+            btn.className = 'rel-btn p-3 rounded-xl border border-indigo-600 bg-indigo-50/80 text-indigo-700 font-semibold ring-2 ring-indigo-500/20 text-sm transition text-center active-rel';
+            state.relationship = relName;
+        }
+
+        // Navigation Helper
+        function goToPage(pageNumber) {
+            state.currentPage = pageNumber;
+            
+            document.querySelectorAll('.page-step').forEach(p => p.classList.remove('active'));
+            
+            const targetPage = document.getElementById(`page-${pageNumber}`);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+
+            for (let i = 1; i <= 4; i++) {
+                const nav = document.getElementById(`nav-step-${i}`);
+                if (nav) {
+                    if (i === pageNumber) {
+                        nav.className = "px-3 py-1.5 rounded-full bg-indigo-600 text-white font-semibold shadow-sm transition-all";
+                    } else if (i < pageNumber) {
+                        nav.className = "px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium transition-all";
+                    } else {
+                        nav.className = "px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 transition-all";
+                    }
+                }
+            }
+
+            if (window.lucide) lucide.createIcons();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Trigger Analysis
+        function startAnalysis() {
+            state.inputText = document.getElementById('inputText').value.trim();
+            state.nonVerbalInput = document.getElementById('nonVerbalInput').value.trim();
+            state.contextText = document.getElementById('contextText').value.trim();
+
+            if (!state.inputText && !state.nonVerbalInput) {
+                showToast("상대방이 한 말 또는 말투/표정 중 하나 이상을 적어주세요!");
+                return;
+            }
+
+            const result = runPsychologicalAnalysis(state);
+            state.analysisResult = result;
+
+            renderPage2(result);
+            renderPage3(result);
+            renderPage4(result);
+
+            goToPage(2);
+        }
+
+        // Psychological Intent Rule Engine
+        function runPsychologicalAnalysis(s) {
+            const lowerSpeech = s.inputText.toLowerCase();
+            const lowerNV = s.nonVerbalInput.toLowerCase();
+            const lowerContext = s.contextText.toLowerCase();
+
+            // 1. Check for weight/piggyback testing cases (e.g. "살쪘어")
+            const isWeightTest = lowerSpeech.includes('살쪘') || lowerSpeech.includes('무거') || lowerContext.includes('업') || lowerContext.includes('안아');
+            
+            // 2. Check for passive-aggressive / cold signals
+            const isColdSignal = lowerSpeech.includes('됐어') || lowerSpeech.includes('신경쓰지마') || lowerSpeech.includes('마음대로') || lowerNV.includes('차갑') || lowerNV.includes('단답') || lowerNV.includes('한숨');
+
+            let score = 30;
+
+            if (isColdSignal) {
+                score = 75;
+            } else if (isWeightTest) {
+                score = 40; // Tension exists if answer is wrong!
+            } else {
+                if (s.nonVerbalInput.length > 0) score += 15;
+                if (s.inputText.length > 0) score += 10;
+            }
+
+            score = Math.min(Math.max(score, 15), 95);
+
+            let riskLevel = "낮음 (단순 확답/애정 요구)";
+            let riskColor = "text-emerald-600";
+
+            if (score >= 70) {
+                riskLevel = "높음 (방어적/경계 상태)";
+                riskColor = "text-rose-600";
+            } else if (score >= 35) {
+                riskLevel = "주의 필요 (답변에 따라 달라짐)";
+                riskColor = "text-amber-600";
+            }
+
+            // Case A: Piggyback/Weight Test ("나 살쪘어?")
+            if (isWeightTest) {
+                return {
+                    angerScore: score,
+                    riskLevel: "주의 (오답 제출 시 즉시 감정 악화)",
+                    riskColor: "text-amber-600",
+                    relationship: s.relationship,
+                    summaryTitle: '"애정 확인 & 우쭈쭈 욕구 표출"',
+                    summaryDesc: `상대방이 "${s.inputText || '나 살쪘어?'}"라고 묻는 것은 실제로 체중이나 킬로그램(kg) 수치를 묻는 것이 아닙니다. 자신의 매력을 확인받고, 사랑받고 있음을 다정한 확답으로 검증하고 싶은 순간입니다.`,
+                    breakdown: [
+                        { label: '애정 확인 욕구', pct: 75, color: 'bg-indigo-500' },
+                        { label: '장난기/귀여운 투정', pct: 20, color: 'bg-purple-500' },
+                        { label: '실제 체중 걱정', pct: 5, color: 'bg-slate-400' }
+                    ],
+                    surfaceText: s.inputText || "나 살쪘어?",
+                    realNeed: "깃털처럼 가볍다고, 여전히 너무 사랑스럽고 예쁘다고 달콤하게 확신을 줘!",
+                    needsList: [
+                        "질문을 받자마자 0.1초 만에 망설임 없이 '전혀 안 살쪘어'라고 반응하기",
+                        "수치적 해명이나 논리 대신 오직 칭찬과 사랑 표현으로 응수하기",
+                        "업어주거나 안아줄 때 '너무 가벼워서 날아갈 것 같다'는 액션 취해주기"
+                    ],
+                    forbiddenActions: [
+                        `❌ "응 솔직히 조금 찐 것 같아" (사실에 입각한 T형 답변)`,
+                        `❌ "몇 kg인데?" 또는 "몸무게 몇 나가?" (수치 확인하기)`,
+                        `❌ 대답하기 전에 1초 이상 머뭇거리거나 망설이는 태도`,
+                        `❌ "다이어트 운동 같이 하자" (지적 및 솔루션 제시)`
+                    ],
+                    actionSteps: [
+                        { title: "Step 1. 0.1초 즉시 반응", desc: "고민하는 기색 없이 즉시 가볍고 예쁘다고 반응합니다." },
+                        { title: "Step 2. 신체적 애정 표현", desc: "더 꽉 안아주거나 가볍게 위로 쳐올리며 '깃털 같다'고 말해줍니다." },
+                        { title: "Step 3. 예쁘다는 확신", desc: "지금이 제일 예쁘고 딱 보기 좋다고 사랑을 표현합니다." }
+                    ],
+                    timing: "0.5초 이내 즉시 망설임 없이 답변!",
+                    scriptA: `"어? 전혀! 깃털처럼 가벼워서 업은 지도 모르겠는데? 지금이 딱 제일 예뻐!"`,
+                    scriptB: `"살은 무슨 살! 지금 너무 가볍고 푹신해서 평생 이렇게 업고 다닐 수도 있겠어."`,
+                    scriptC: `"너 진짜 가벼워서 날아갈 것 같은데? 혹시 주머니에 돌이라도 넣고 다녀야 하는 거 아니야?"`
+                };
+            }
+
+            // Case B: Cold/Passive-Aggressive
+            if (isColdSignal) {
+                return {
+                    angerScore: score,
+                    riskLevel: riskLevel,
+                    riskColor: riskColor,
+                    relationship: s.relationship,
+                    summaryTitle: '"마음의 문을 닫고 서운함을 방어하는 상태"',
+                    summaryDesc: `상대방은 현재 ${s.nonVerbalInput ? `'${s.nonVerbalInput}' 표정/말투와 함께` : ''} 감정을 억누르고 있습니다. 겉으로는 포기한 듯 말하지만 실제로는 깊은 서운함을 알아채주길 바라고 있습니다.`,
+                    breakdown: [
+                        { label: '서운함 및 기대감', pct: 60, color: 'bg-rose-500' },
+                        { label: '방어 기제 및 거부감', pct: 30, color: 'bg-amber-500' },
+                        { label: '해결 갈망', pct: 10, color: 'bg-indigo-500' }
+                    ],
+                    surfaceText: s.inputText || "됐어, 알아서 해",
+                    realNeed: "내 서운한 감정을 건성으로 넘기지 말고 차분하게 먼저 공감하고 다독여줘.",
+                    needsList: [
+                        "즉각적인 핑계나 논리적 변명 피하기",
+                        "상대방이 기분 상한 진짜 이유를 먼저 맞혀주기",
+                        "진심 어린 사과와 함께 다정한 감정 다독임"
+                    ],
+                    forbiddenActions: [
+                        `❌ "너 진짜 왜 그래?" (비난조 질문)`,
+                        `❌ "알았어 내 잘못이야 됐지?" (성급한 대충 사과)`,
+                        `❌ 그래 그럼 네 말대로 할게 (진짜 알아서 해버리기)`
+                    ],
+                    actionSteps: [
+                        { title: "Step 1. 감정 인정", desc: "상대방이 속상해하는 현실을 우선 인정해 줍니다." },
+                        { title: "Step 2. 원인 먼저 말해주기", desc: "내가 놓친 부분이 무엇인지 먼저 짚어줍니다." },
+                        { title: "Step 3. 경청", desc: "상대방의 이야기를 조용히 들어줍니다." }
+                    ],
+                    timing: "10~20분 내에 정성스러운 메시지로 다가가기",
+                    scriptA: `"내가 너 마음을 세심하게 챙기지 못해서 기분 상하게 한 것 같아. 미안해, 내 말 들어줘서 고마워."`,
+                    scriptB: `"속상했을 텐데 바로 말해줘서 고마워. 내가 놓친 부분 깊이 반성하고 있어. 기분 풀릴 때까지 얘기 들을게."`,
+                    scriptC: `"오늘 내가 너무 눈치가 없었지? 맛있는 거 먹으면서 네 마음 다 풀릴 때까지 얘기 나누고 싶어."`
+                };
+            }
+
+            // Case C: Default General Analysis
+            return {
+                angerScore: score,
+                riskLevel: riskLevel,
+                riskColor: riskColor,
+                relationship: s.relationship,
+                summaryTitle: '"일반적 의사소통 및 정서 교류 상태"',
+                summaryDesc: `입력하신 내용 "${s.inputText || s.nonVerbalInput}" 분석 결과, 상대방은 특별한 악의 없이 자신의 상황이나 감정을 솔직히 나누고자 하는 상태입니다.`,
+                breakdown: [
+                    { label: '소통 욕구', pct: 60, color: 'bg-indigo-500' },
+                    { label: '친밀감 기대', pct: 30, color: 'bg-purple-500' },
+                    { label: '경계심', pct: 10, color: 'bg-slate-400' }
+                ],
+                surfaceText: s.inputText || s.nonVerbalInput,
+                realNeed: "내 이야기에 관심과 공감을 보여주고 경청해 줬으면 좋겠어.",
+                needsList: [
+                    "적절한 리액션과 밝은 어조 유지하기",
+                    "상대방의 말에 호응하며 다음 질문 건네기"
+                ],
+                forbiddenActions: [
+                    `❌ 건성으로 듣고 영혼 없이 대답하기`,
+                    `❌ 갑자기 대화 주제를 내 얘기로 돌려버리기`
+                ],
+                actionSteps: [
+                    { title: "Step 1. 미소와 경청", desc: "상대방의 눈을 맞추고 경청합니다." },
+                    { title: "Step 2. 긍정 리액션", desc: "상대방의 감정에 맞장구를 쳐줍니다." }
+                ],
+                timing: "자연스럽게 편한 시점에 대답",
+                scriptA: `"듣다 보니까 진짜 그렇네! 네 말이 맞아. 더 자세히 얘기해 줄 수 있어?"`,
+                scriptB: `"오 그렇게 생각할 수도 있구나! 역시 네 관점이 제일 세심해."`,
+                scriptC: `"오늘 고생 많았는데 좋아하는 차 한잔 마시면서 얘기 나누자!"`
+            };
+        }
+
+        // Render Page 2
+        function renderPage2(data) {
+            document.getElementById('relationBadge').innerText = data.relationship;
+            document.getElementById('angerScoreText').innerText = `${data.angerScore}%`;
+            
+            const circle = document.getElementById('gaugeCircle');
+            const circumference = 2 * Math.PI * 50;
+            const offset = circumference - (data.angerScore / 100) * circumference;
+            circle.style.strokeDasharray = `${circumference}`;
+            circle.style.strokeDashoffset = `${offset}`;
+
+            if (data.angerScore >= 70) {
+                circle.setAttribute('class', 'gauge-fill text-rose-500');
+            } else if (data.angerScore >= 40) {
+                circle.setAttribute('class', 'gauge-fill text-amber-500');
+            } else {
+                circle.setAttribute('class', 'gauge-fill text-indigo-500');
+            }
+
+            document.getElementById('emotionSummaryTitle').innerText = data.summaryTitle;
+            document.getElementById('emotionSummaryDesc').innerText = data.summaryDesc;
+            
+            const riskTextEl = document.getElementById('riskLevelText');
+            riskTextEl.innerText = data.riskLevel;
+            riskTextEl.className = `${data.riskColor} font-bold`;
+
+            const breakdownContainer = document.getElementById('emotionBreakdownList');
+            breakdownContainer.innerHTML = '';
+            data.breakdown.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'space-y-1';
+                row.innerHTML = `
+                    <div class="flex justify-between text-xs font-semibold text-slate-700">
+                        <span>${item.label}</span>
+                        <span>${item.pct}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden">
+                        <div class="${item.color} h-2.5 rounded-full progress-bar-fill" style="width: ${item.pct}%"></div>
+                    </div>
+                `;
+                breakdownContainer.appendChild(row);
+            });
+        }
+
+        // Render Page 3
+        function renderPage3(data) {
+            document.getElementById('surfaceSpeechText').innerText = `"${data.surfaceText}"`;
+            document.getElementById('realInnerNeedText').innerText = `"${data.realNeed}"`;
+
+            const needsList = document.getElementById('keyNeedsList');
+            needsList.innerHTML = '';
+            data.needsList.forEach(n => {
+                const li = document.createElement('li');
+                li.innerText = n;
+                needsList.appendChild(li);
+            });
+
+            const forbiddenBox = document.getElementById('forbiddenBox');
+            forbiddenBox.innerHTML = '';
+            data.forbiddenActions.forEach(act => {
+                const div = document.createElement('div');
+                div.className = 'p-2.5 bg-white/90 rounded-xl border border-rose-200 text-rose-900 font-medium shadow-sm';
+                div.innerText = act;
+                forbiddenBox.appendChild(div);
+            });
+        }
+
+        // Render Page 4
+        function renderPage4(data) {
+            const stepsList = document.getElementById('actionStepsList');
+            stepsList.innerHTML = '';
+            data.actionSteps.forEach(step => {
+                const div = document.createElement('div');
+                div.className = 'bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 shadow-sm';
+                div.innerHTML = `
+                    <h4 class="text-xs font-bold text-indigo-600">${step.title}</h4>
+                    <p class="text-xs text-slate-600">${step.desc}</p>
+                `;
+                stepsList.appendChild(div);
+            });
+
+            document.getElementById('timingText').innerText = data.timing;
+            document.getElementById('scriptA').innerText = data.scriptA;
+            document.getElementById('scriptB').innerText = data.scriptB;
+            document.getElementById('scriptC').innerText = data.scriptC;
+        }
+
+        // Clipboard Copy Helper
+        function copyToClipboard(elementId, btn) {
+            const text = document.getElementById(elementId).innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast("답장 스크립트가 클립보드에 복사되었습니다!");
+        }
+
+        // Toast Notification Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
